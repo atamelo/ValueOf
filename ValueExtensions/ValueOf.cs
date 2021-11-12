@@ -7,8 +7,8 @@ using System.Reflection;
 
 namespace ValueExtensions
 {
-    public class ValueOf<TValue, TThis>
-            where TThis : ValueOf<TValue, TThis>
+    public record ValueOf<TValue, TThis>
+            where TThis : notnull, ValueOf<TValue, TThis>
             where TValue : notnull
     {
         private static Func<TValue, TThis>? _newInstance;
@@ -29,6 +29,7 @@ namespace ValueExtensions
             return newInstance is not null;
         }
 
+        [return: NotNull]
         public static TThis From(TValue value)
         {
             if (!CanBeCreatedFrom(value))
@@ -57,7 +58,9 @@ namespace ValueExtensions
 
                     if (validators.Length == 0)
                     {
-                        throw new ValueCreationException($"Validation method not found for target type '{typeof(TThis).FullName}'.");
+                        _canBeCreatedFrom = static _ => true;
+                        
+                        return true;
                     }
 
                     if (validators.Length > 1)
@@ -69,7 +72,7 @@ namespace ValueExtensions
                 }
 
                 ParameterExpression methodParameter = Expression.Parameter(typeof(TValue), "value");
-                MethodCallExpression callExp = Expression.Call(validationMethod!, methodParameter);
+                MethodCallExpression callExp = Expression.Call(validationMethod, methodParameter);
 
                 try
                 {
@@ -122,48 +125,6 @@ namespace ValueExtensions
         private static Exception ValueCreationException(Exception reason)
         {
             return new ValueCreationException($"Error creation value for target type {typeof(TThis).FullName}", reason);
-        }
-
-        protected virtual bool Equals(ValueOf<TValue, TThis> other)
-        {
-            return EqualityComparer<TValue>.Default.Equals(Value, other.Value);
-        }
-
-        public override bool Equals(object? obj)
-        {
-            if (obj is null)
-                return false;
-
-            if (ReferenceEquals(this, obj))
-                return true;
-
-            return obj.GetType() == GetType() && Equals((ValueOf<TValue, TThis>)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return EqualityComparer<TValue>.Default.GetHashCode(Value);
-        }
-
-        public static bool operator ==(ValueOf<TValue, TThis> a, ValueOf<TValue, TThis> b)
-        {
-            if (a is null && b is null)
-                return true;
-
-            if (a is null || b is null)
-                return false;
-
-            return a.Equals(b);
-        }
-
-        public static bool operator !=(ValueOf<TValue, TThis> a, ValueOf<TValue, TThis> b)
-        {
-            return !(a == b);
-        }
-
-        public override string? ToString()
-        {
-            return Value.ToString();
         }
     }
 
