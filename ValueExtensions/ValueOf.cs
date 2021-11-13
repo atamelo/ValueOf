@@ -135,7 +135,7 @@ namespace ValueExtensions
             MethodInfo? validationMethod =
                 methods
                     .Where(method =>
-                        method.Name == "CanBeCreatedFrom" &&
+                        method.Name == "CanCreateFrom" &&
                         ParametersMatch(method, signature))
                     .SingleOrDefault();
 
