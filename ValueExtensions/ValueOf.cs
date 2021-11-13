@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
@@ -11,9 +10,12 @@ namespace ValueExtensions
             where TThis : notnull, ValueOf<TValue, TThis>
             where TValue : notnull
     {
+        delegate bool CanBeCreatedFromDelegate(TValue value, out string? error);
+        delegate bool CanBeCreatedFromShortDelegate(TValue value);
+
         private static Func<TValue, TThis>? _newInstance;
 
-        private static Func<TValue, bool>? _canBeCreatedFrom;
+        private static CanBeCreatedFromDelegate? _canBeCreatedFrom;
 
         protected ValueOf(TValue value)
         {
@@ -22,80 +24,191 @@ namespace ValueExtensions
 
         public TValue Value { get; init; }
 
-        public static bool TryCreateFrom(TValue value, [NotNullWhen(true)] out TThis? newInstance)
+        public static bool TryCreateFrom(
+            TValue value,
+            [NotNullWhen(true)] out TThis? newInstance)
         {
-            newInstance = CanBeCreatedFrom(value) ? CreateNewInstance(value) : null;
+            return TryCreateFrom(value, out newInstance, out _);
+        }
+
+        public static bool TryCreateFrom(
+            TValue value,
+            [NotNullWhen(true)] out TThis? newInstance,
+            [NotNullWhen(false)] out string? errorDescription)
+        {
+            newInstance = CanBeCreatedFrom(value, out errorDescription) ? CreateNewInstance(value) : null;
 
             return newInstance is not null;
         }
 
-        [return: NotNull]
         public static TThis From(TValue value)
         {
-            if (!CanBeCreatedFrom(value))
+            static string EscapeIfNull<T>(T value) => $"{(value is not null ? $"[{value}]" : "<NULL>")}";
+
+            if (!CanBeCreatedFrom(value, out string? errorDescription))
             {
-                throw new ArgumentException($"Can't create an instance of {typeof(TThis).FullName} type from value '{value}' - validation failed.");
+                throw new ArgumentException($"Can't create an instance of {typeof(TThis).FullName} type " +
+                    $"from value {EscapeIfNull(value)} - validation failed with error: {EscapeIfNull(errorDescription)}");
             }
 
-            return CreateNewInstance(value);
+            TThis newInstance = CreateNewInstance(value);
+
+            return newInstance;
         }
 
-        private static bool CanBeCreatedFrom(TValue value)
+        private static bool CanBeCreatedFrom(TValue value, [NotNullWhen(false)] out string? errorDescription)
         {
-            if (_canBeCreatedFrom is null)
+            if (_canBeCreatedFrom is not null)
             {
-                MethodInfo? validationMethod = typeof(TThis).GetMethod("CanBeCreatedFrom",
-                    BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static,
-                    null, new[] { typeof(TValue) }, null);
-
-                if (validationMethod == null)
-                {
-                    MethodInfo[] validators =
-                        typeof(TThis)
-                            .GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Static | BindingFlags.Public)
-                            .Where(m => m.GetCustomAttribute<ValidationMethodAttribute>() is not null)
-                            .ToArray();
-
-                    if (validators.Length == 0)
-                    {
-                        _canBeCreatedFrom = static _ => true;
-                        
-                        return true;
-                    }
-
-                    if (validators.Length > 1)
-                    {
-                        throw new ValueCreationException($"More than one validation method found for target type '{typeof(TThis).FullName}'.");
-                    }
-
-                    validationMethod = validators[0];
-                }
-
-                ParameterExpression methodParameter = Expression.Parameter(typeof(TValue), "value");
-                MethodCallExpression callExp = Expression.Call(validationMethod, methodParameter);
-
-                try
-                {
-                    LambdaExpression canBeCreatedFromLambda = Expression.Lambda<Func<TValue, bool>>(callExp, methodParameter);
-                    _canBeCreatedFrom = (Func<TValue, bool>)canBeCreatedFromLambda.Compile();
-                }
-                catch (Exception reason)
-                {
-                    throw ValueCreationException(reason);
-                }
+                return _canBeCreatedFrom(value, out errorDescription);
             }
 
-            bool result = _canBeCreatedFrom(value);
+            MethodInfo[] methods = typeof(TThis).GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
 
-            return result;
+            // First look for the extended version
+            _canBeCreatedFrom = TryCreateExtendedValidator(methods);
+
+            if (_canBeCreatedFrom is not null)
+            {
+                return _canBeCreatedFrom(value, out errorDescription);
+            }
+
+            // then for the shorthand one
+            _canBeCreatedFrom = TryCreateShortValidator(methods);
+
+            if (_canBeCreatedFrom is not null)
+            {
+                return _canBeCreatedFrom(value, out errorDescription);
+            }
+
+            // default
+            _canBeCreatedFrom = static (TValue _, out string? errorDescription) =>
+            {
+                errorDescription = null;
+                return true;
+            };
+
+            return _canBeCreatedFrom(value, out errorDescription);
+        }
+
+        private static CanBeCreatedFromDelegate? TryCreateExtendedValidator(MethodInfo[] methods)
+        {
+            var validator =
+                TryCreateValidator<CanBeCreatedFromDelegate>(
+                    methods,
+                    new[] { typeof(TValue), typeof(string).MakeByRefType() },
+                    new[] { "value", "errorDescription" }
+                );
+
+            return validator;
+        }
+
+        private static CanBeCreatedFromDelegate? TryCreateShortValidator(MethodInfo[] methods)
+        {
+            CanBeCreatedFromShortDelegate? shortValidator =
+                TryCreateValidator<CanBeCreatedFromShortDelegate>(
+                    methods,
+                    new[] { typeof(TValue) },
+                    new[] { "value" }
+                );
+
+            if (shortValidator is null)
+            {
+                return null;
+            }
+
+            CanBeCreatedFromDelegate validator = (TValue value, out string? errorDescripton) =>
+            {
+                errorDescripton = shortValidator(value) ? null : "<NOT SPECIFIED>";
+
+                return errorDescripton is null;
+            };
+
+            return validator;
+        }
+
+        private static TValidator? TryCreateValidator<TValidator>(MethodInfo[] methods, Type[] signature, string[] parameterNames)
+            where TValidator : Delegate
+        {
+            static bool ParametersMatch(MethodInfo method, Type[] signature)
+                => Enumerable.SequenceEqual(method.GetParameters().Select(p => p.ParameterType), signature);
+
+            // First try by convention
+            MethodInfo? validationMethod =
+                methods
+                    .Where(method =>
+                        method.Name == "CanBeCreatedFrom" &&
+                        ParametersMatch(method, signature))
+                    .SingleOrDefault();
+
+            if (validationMethod is null)
+            {
+                // then by configuration
+                MethodInfo[] validationMethodsByConfiguration =
+                    methods
+                        .Where(method =>
+                            method.GetCustomAttribute<ValidationMethodAttribute>() is not null &&
+                            ParametersMatch(method, signature))
+                        .ToArray();
+
+                if (validationMethodsByConfiguration.Length == 0)
+                {
+                    return null;
+                }
+
+                if (validationMethodsByConfiguration.Length > 1)
+                {
+                    throw new ValueCreationException($"More than one validation method configured for target type '{typeof(TThis).FullName}'.");
+                }
+
+                validationMethod = validationMethodsByConfiguration[0];
+            }
+
+            var validator = CreateValidator<TValidator>(validationMethod, signature, parameterNames);
+
+            return validator;
+        }
+
+        private static TValidator CreateValidator<TValidator>(MethodInfo validationMethod, Type[] signature, string[] parameterNames)
+            where TValidator : Delegate
+        {
+            // TODO: .Zip?
+            var parameters = new ParameterExpression[signature.Length];
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                parameters[i] = Expression.Parameter(signature[i], parameterNames[i]);
+            }
+
+            MethodCallExpression call = Expression.Call(validationMethod, parameters);
+
+            try
+            {
+                LambdaExpression canBeCreatedFromLambda = Expression.Lambda<TValidator>(call, parameters);
+                var validator = (TValidator)canBeCreatedFromLambda.Compile();
+
+                return validator;
+            }
+            catch (Exception reason)
+            {
+                throw ValueCreationException(reason);
+            }
         }
 
         private static TThis CreateNewInstance(TValue value)
         {
             if (_newInstance is null)
             {
-                ConstructorInfo? ctor = typeof(TThis).GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Instance,
-                    null, new[] { typeof(TValue) }, null);
+                ConstructorInfo? ctor =
+                    typeof(TThis)
+                        .GetConstructor(
+                            BindingFlags.Public |
+                            BindingFlags.NonPublic |
+                            BindingFlags.DeclaredOnly |
+                            BindingFlags.Instance,
+                            null,
+                            new[] { typeof(TValue) },
+                            null);
 
                 if (ctor is null)
                 {
@@ -104,11 +217,11 @@ namespace ValueExtensions
                 }
 
                 ParameterExpression constructorParameter = Expression.Parameter(typeof(TValue), "value");
-                NewExpression newExp = Expression.New(ctor, constructorParameter);
+                NewExpression newExpression = Expression.New(ctor, constructorParameter);
 
                 try
                 {
-                    LambdaExpression newInsanceLambda = Expression.Lambda<Func<TValue, TThis>>(newExp, constructorParameter);
+                    LambdaExpression newInsanceLambda = Expression.Lambda<Func<TValue, TThis>>(newExpression, constructorParameter);
                     _newInstance = (Func<TValue, TThis>)newInsanceLambda.Compile();
                 }
                 catch (Exception reason)
@@ -134,6 +247,7 @@ namespace ValueExtensions
     {
     }
 
+
     public class ValueCreationException : Exception
     {
         public ValueCreationException(string message, Exception? inner = null) : base(message, inner)
@@ -141,4 +255,3 @@ namespace ValueExtensions
         }
     }
 }
-
