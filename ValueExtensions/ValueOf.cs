@@ -10,8 +10,8 @@ namespace ValueExtensions
             where TThis : notnull, ValueOf<TValue, TThis>
             where TValue : notnull
     {
-        delegate bool CanBeCreatedFromDelegate(TValue value, out string? error);
-        delegate bool CanBeCreatedFromShortDelegate(TValue value);
+        private delegate bool CanBeCreatedFromDelegate(TValue value, out string? error);
+        private delegate bool CanBeCreatedFromShortDelegate(TValue value);
 
         private static Func<TValue, TThis>? _newInstance;
 
