@@ -147,7 +147,7 @@ namespace ValueExtensions
                 MethodInfo[] validationMethodsByConfiguration =
                     methods
                         .Where(method =>
-                            method.GetCustomAttribute<ValidationMethodAttribute>() is not null &&
+                            method.GetCustomAttribute<ValidatorAttribute>() is not null &&
                             ParametersMatch(method, signature))
                         .ToArray();
 
@@ -158,7 +158,7 @@ namespace ValueExtensions
 
                 if (validationMethodsByConfiguration.Length > 1)
                 {
-                    throw new ValueCreationException($"More than one validation method configured for target type '{typeof(TThis).FullName}'.");
+                    throw new ValueCreationException($"More than one validator is configured for target type '{typeof(TThis).FullName}'.");
                 }
 
                 validationMethod = validationMethodsByConfiguration[0];
@@ -213,7 +213,13 @@ namespace ValueExtensions
                 if (ctor is null)
                 {
                     throw new ValueCreationException($"Constructor with argument of type '{typeof(TValue).FullName}'" +
-                        $"not found for target type '{typeof(TThis).FullName}'.");
+                        $"was not found for target type '{typeof(TThis).FullName}'.");
+                }
+
+                if (ctor.IsPublic)
+                {
+                    throw new ValueCreationException($"Constructor with argument of type '{typeof(TValue).FullName}'" +
+                        $"for target type '{typeof(TThis).FullName}' cannot be public.");
                 }
 
                 ParameterExpression constructorParameter = Expression.Parameter(typeof(TValue), "value");
@@ -243,7 +249,7 @@ namespace ValueExtensions
 
 
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
-    public class ValidationMethodAttribute : Attribute
+    public class ValidatorAttribute : Attribute
     {
     }
 
