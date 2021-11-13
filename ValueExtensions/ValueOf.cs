@@ -24,14 +24,14 @@ namespace ValueExtensions
 
         public TValue Value { get; init; }
 
-        public static bool TryCreateFrom(
+        public static bool TryFrom(
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance)
         {
-            return TryCreateFrom(value, out newInstance, out _);
+            return TryFrom(value, out newInstance, out _);
         }
 
-        public static bool TryCreateFrom(
+        public static bool TryFrom(
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
