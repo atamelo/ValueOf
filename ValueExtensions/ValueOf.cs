@@ -45,13 +45,11 @@ namespace ValueExtensions
         {
             static string EscapeIfNull<T>(T value) => $"{(value is not null ? $"[{value}]" : "<NULL>")}";
 
-            if (!CanBeCreatedFrom(value, out string? errorDescription))
+            if (!TryFrom(value, out TThis? newInstance, out string? errorDescription))
             {
                 throw new ArgumentException($"Can't create an instance of {typeof(TThis).FullName} type " +
                     $"from value {EscapeIfNull(value)} - validation failed with error: {EscapeIfNull(errorDescription)}");
             }
-
-            TThis newInstance = CreateNewInstance(value);
 
             return newInstance;
         }
