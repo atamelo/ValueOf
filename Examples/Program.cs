@@ -1,10 +1,10 @@
 ﻿using ValueExtensions;
 
-UserId userId = Value.Of<int, UserId>.CreateFrom(10);
+UserId userId = ValueOf.AsVal<int, UserId>.CreateFrom(10);
 
 Console.WriteLine(userId);
 
-public readonly record struct UserId : Value.Of<int, UserId>
+public readonly record struct UserId : ValueOf.AsVal<int, UserId>
 {
     public int Value { get; }
 
@@ -20,7 +20,7 @@ public readonly record struct UserId : Value.Of<int, UserId>
     }
 }
 
-public record EmailAddress : ValueOf<string, EmailAddress>
+public record EmailAddress : ValueOf.OfAsRef<string, EmailAddress>
 {
     private EmailAddress(string value) : base(value)
     {

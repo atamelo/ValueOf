@@ -6,11 +6,11 @@ using System.Reflection;
 
 namespace ValueExtensions;
 
-public static class Value
+public static class ValueOf
 {
-    public interface Of<TValue, TThis>
+    public interface AsVal<TValue, TThis>
         where TValue : notnull
-        where TThis : notnull, Of<TValue, TThis>
+        where TThis : notnull, AsVal<TValue, TThis>
     {
         private delegate bool CanBeCreatedFromDelegate(TValue value, out string? error);
         private delegate bool CanBeCreatedFromShortDelegate(TValue value);
@@ -246,6 +246,38 @@ public static class Value
         private static Exception ValueCreationException(Exception reason)
         {
             return new ValueCreationException($"Error creation value for target type {typeof(TThis).FullName}", reason);
+        }
+    }
+
+    public record OfAsRef<TValue, TThis> : ValueOf.AsVal<TValue, TThis>
+        where TThis : notnull, OfAsRef<TValue, TThis>
+        where TValue : notnull
+    {
+        public TValue Value { get; }
+
+        protected OfAsRef(TValue value)
+        {
+            Value = value;
+        }
+
+        public static bool TryCreateFrom(
+            TValue value,
+            [NotNullWhen(true)] out TThis? newInstance)
+        {
+            return OfAsRef<TValue, TThis>.TryCreateFrom(value, out newInstance);
+        }
+
+        public static bool TryCreateFrom(
+            TValue value,
+            [NotNullWhen(true)] out TThis? newInstance,
+            [NotNullWhen(false)] out string? errorDescription)
+        {
+            return OfAsRef<TValue, TThis>.TryCreateFrom(value, out newInstance, out errorDescription);
+        }
+
+        public static TThis CreateFrom(TValue value)
+        {
+            return OfAsRef<TValue, TThis>.CreateFrom(value);
         }
     }
 }
