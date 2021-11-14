@@ -6,9 +6,9 @@ using System.Reflection;
 
 namespace ValueExtensions
 {
-    public record ValueOf<TValue, TThis>
-            where TThis : notnull, ValueOf<TValue, TThis>
-            where TValue : notnull
+    public interface ValueOf<TValue, TThis>
+        where TValue : notnull
+        where TThis : notnull, ValueOf<TValue, TThis>
     {
         private delegate bool CanBeCreatedFromDelegate(TValue value, out string? error);
         private delegate bool CanBeCreatedFromShortDelegate(TValue value);
@@ -17,12 +17,7 @@ namespace ValueExtensions
 
         private static CanBeCreatedFromDelegate? _canBeCreatedFrom;
 
-        protected ValueOf(TValue value)
-        {
-            Value = value;
-        }
-
-        public TValue Value { get; init; }
+        public TValue Value { get; }
 
         public static bool TryFrom(
             TValue value,
@@ -36,9 +31,15 @@ namespace ValueExtensions
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
         {
-            newInstance = CanBeCreatedFrom(value, out errorDescription) ? CreateNewInstance(value) : null;
+            if (!CanBeCreatedFrom(value, out errorDescription))
+            {
+                newInstance = default;
+                return false;
+            }
 
-            return newInstance is not null;
+            newInstance = CreateNewInstance(value);
+
+            return true;
         }
 
         public static TThis From(TValue value)
@@ -245,12 +246,10 @@ namespace ValueExtensions
         }
     }
 
-
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class ValidatorAttribute : Attribute
     {
     }
-
 
     public class ValueCreationException : Exception
     {
