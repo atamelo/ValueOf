@@ -21,14 +21,14 @@ public static class Value
 
         public TValue Value { get; }
 
-        public static bool TryFrom(
+        public static bool TryCreateFrom(
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance)
         {
-            return TryFrom(value, out newInstance, out _);
+            return TryCreateFrom(value, out newInstance, out _);
         }
 
-        public static bool TryFrom(
+        public static bool TryCreateFrom(
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
@@ -44,11 +44,11 @@ public static class Value
             return true;
         }
 
-        public static TThis From(TValue value)
+        public static TThis CreateFrom(TValue value)
         {
             static string EscapeIfNull<T>(T value) => $"{(value is not null ? $"[{value}]" : "<NULL>")}";
 
-            if (!TryFrom(value, out TThis? newInstance, out string? errorDescription))
+            if (!TryCreateFrom(value, out TThis? newInstance, out string? errorDescription))
             {
                 throw new ArgumentException($"Can't create an instance of {typeof(TThis).FullName} type " +
                     $"from value {EscapeIfNull(value)} - validation failed with error: {EscapeIfNull(errorDescription)}");
@@ -173,7 +173,6 @@ public static class Value
         private static TValidator CreateValidator<TValidator>(MethodInfo validationMethod, Type[] signature, string[] parameterNames)
             where TValidator : Delegate
         {
-            // TODO: .Zip?
             var parameters = new ParameterExpression[signature.Length];
 
             for (int i = 0; i < signature.Length; i++)
@@ -181,6 +180,7 @@ public static class Value
                 parameters[i] = Expression.Parameter(signature[i], parameterNames[i]);
             }
 
+            // TODO: call to an existing method => use Delegate.CreateDelegate ?
             MethodCallExpression call = Expression.Call(validationMethod, parameters);
 
             try
@@ -223,6 +223,7 @@ public static class Value
                         $"for target type '{typeof(TThis).FullName}' cannot be public.");
                 }
 
+                // TODO: call to an existing method => use Delegate.CreateDelegate ?
                 ParameterExpression constructorParameter = Expression.Parameter(typeof(TValue), "value");
                 NewExpression newExpression = Expression.New(ctor, constructorParameter);
 
