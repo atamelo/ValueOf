@@ -20,7 +20,7 @@ public readonly record struct UserId : ValueOf.AsVal<int, UserId>
     }
 }
 
-public record EmailAddress : ValueOf.OfAsRef<string, EmailAddress>
+public record EmailAddress : ValueOf.AsRef<string, EmailAddress>
 {
     private EmailAddress(string value) : base(value)
     {

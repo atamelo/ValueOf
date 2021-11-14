@@ -249,13 +249,13 @@ public static class ValueOf
         }
     }
 
-    public record OfAsRef<TValue, TThis> : ValueOf.AsVal<TValue, TThis>
-        where TThis : notnull, OfAsRef<TValue, TThis>
-        where TValue : notnull
+    public record AsRef<TValue, TThis> : ValueOf.AsVal<TValue, TThis>
+        where TThis : notnull, AsRef<TValue, TThis>
+        where TValue : class
     {
         public TValue Value { get; }
 
-        protected OfAsRef(TValue value)
+        protected AsRef(TValue value)
         {
             Value = value;
         }
@@ -264,7 +264,7 @@ public static class ValueOf
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance)
         {
-            return OfAsRef<TValue, TThis>.TryCreateFrom(value, out newInstance);
+            return AsRef<TValue, TThis>.TryCreateFrom(value, out newInstance);
         }
 
         public static bool TryCreateFrom(
@@ -272,12 +272,12 @@ public static class ValueOf
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
         {
-            return OfAsRef<TValue, TThis>.TryCreateFrom(value, out newInstance, out errorDescription);
+            return AsRef<TValue, TThis>.TryCreateFrom(value, out newInstance, out errorDescription);
         }
 
         public static TThis CreateFrom(TValue value)
         {
-            return OfAsRef<TValue, TThis>.CreateFrom(value);
+            return AsRef<TValue, TThis>.CreateFrom(value);
         }
     }
 }
