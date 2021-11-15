@@ -264,7 +264,7 @@ public static class ValueOf
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance)
         {
-            return AsRef<TValue, TThis>.TryCreateFrom(value, out newInstance);
+            return AsVal<TValue, TThis>.TryCreateFrom(value, out newInstance);
         }
 
         public static bool TryCreateFrom(
@@ -272,12 +272,12 @@ public static class ValueOf
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
         {
-            return AsRef<TValue, TThis>.TryCreateFrom(value, out newInstance, out errorDescription);
+            return AsVal<TValue, TThis>.TryCreateFrom(value, out newInstance, out errorDescription);
         }
 
         public static TThis CreateFrom(TValue value)
         {
-            return AsRef<TValue, TThis>.CreateFrom(value);
+            return AsVal<TValue, TThis>.CreateFrom(value);
         }
     }
 }
