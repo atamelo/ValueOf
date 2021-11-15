@@ -6,11 +6,31 @@ using System.Reflection;
 
 namespace ValueExtensions;
 
-public static class ValueOf
-{
-    public interface AsVal<TValue, TThis>
+public class ValueOf<TValue, TThis>
         where TValue : notnull
-        where TThis : notnull, AsVal<TValue, TThis>
+        where TThis : notnull, ValueOf<TValue, TThis>.AsVal
+{
+    public static bool TryCreateFrom(
+    TValue value,
+    [NotNullWhen(true)] out TThis? newInstance)
+    {
+        return AsVal.TryCreateFrom(value, out newInstance, out _);
+    }
+
+    public static bool TryCreateFrom(
+        TValue value,
+        [NotNullWhen(true)] out TThis? newInstance,
+        [NotNullWhen(false)] out string? errorDescription)
+    {
+        return AsVal.TryCreateFrom(value, out newInstance, out errorDescription);
+    }
+
+    public static TThis CreateFrom(TValue value)
+    {
+        return AsVal.CreateFrom(value);
+    }
+
+    public interface AsVal
     {
         private delegate bool CanBeCreatedFromDelegate(TValue value, out string? error);
         private delegate bool CanBeCreatedFromShortDelegate(TValue value);
@@ -249,9 +269,7 @@ public static class ValueOf
         }
     }
 
-    public record AsRef<TValue, TThis> : ValueOf.AsVal<TValue, TThis>
-        where TThis : notnull, AsRef<TValue, TThis>
-        where TValue : class
+    public record AsRef : AsVal
     {
         public TValue Value { get; }
 
@@ -264,7 +282,7 @@ public static class ValueOf
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance)
         {
-            return AsVal<TValue, TThis>.TryCreateFrom(value, out newInstance);
+            return AsVal.TryCreateFrom(value, out newInstance);
         }
 
         public static bool TryCreateFrom(
@@ -272,12 +290,12 @@ public static class ValueOf
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
         {
-            return AsVal<TValue, TThis>.TryCreateFrom(value, out newInstance, out errorDescription);
+            return AsVal.TryCreateFrom(value, out newInstance, out errorDescription);
         }
 
         public static TThis CreateFrom(TValue value)
         {
-            return AsVal<TValue, TThis>.CreateFrom(value);
+            return AsVal.CreateFrom(value);
         }
     }
 }
