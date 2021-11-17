@@ -32,12 +32,12 @@ public class ValueOf<TValue, TThis>
 
     public interface AsVal
     {
-        private delegate bool CanBeCreatedFromDelegate(TValue value, out string? error);
-        private delegate bool CanBeCreatedFromShortDelegate(TValue value);
+        private delegate bool CanCreateFromDelegate(TValue value, out string? error);
+        private delegate bool CanCreateFromShortDelegate(TValue value);
 
         private static Func<TValue, TThis>? _newInstance;
 
-        private static CanBeCreatedFromDelegate? _canBeCreatedFrom;
+        private static CanCreateFromDelegate? _canCreateFrom;
 
         public TValue Value { get; }
 
@@ -53,7 +53,7 @@ public class ValueOf<TValue, TThis>
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
         {
-            if (!CanBeCreatedFrom(value, out errorDescription))
+            if (!CanCreateFrom(value, out errorDescription))
             {
                 newInstance = default;
                 return false;
@@ -77,45 +77,45 @@ public class ValueOf<TValue, TThis>
             return newInstance;
         }
 
-        private static bool CanBeCreatedFrom(TValue value, [NotNullWhen(false)] out string? errorDescription)
+        private static bool CanCreateFrom(TValue value, [NotNullWhen(false)] out string? errorDescription)
         {
-            if (_canBeCreatedFrom is not null)
+            if (_canCreateFrom is not null)
             {
-                return _canBeCreatedFrom(value, out errorDescription);
+                return _canCreateFrom(value, out errorDescription);
             }
 
             MethodInfo[] methods = typeof(TThis).GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
 
             // First look for the extended version
-            _canBeCreatedFrom = TryCreateExtendedValidator(methods);
+            _canCreateFrom = TryCreateExtendedValidator(methods);
 
-            if (_canBeCreatedFrom is not null)
+            if (_canCreateFrom is not null)
             {
-                return _canBeCreatedFrom(value, out errorDescription);
+                return _canCreateFrom(value, out errorDescription);
             }
 
             // then for the shorthand one
-            _canBeCreatedFrom = TryCreateShortValidator(methods);
+            _canCreateFrom = TryCreateShortValidator(methods);
 
-            if (_canBeCreatedFrom is not null)
+            if (_canCreateFrom is not null)
             {
-                return _canBeCreatedFrom(value, out errorDescription);
+                return _canCreateFrom(value, out errorDescription);
             }
 
             // default
-            _canBeCreatedFrom = static (TValue _, out string? errorDescription) =>
+            _canCreateFrom = static (TValue _, out string? errorDescription) =>
             {
                 errorDescription = null;
                 return true;
             };
 
-            return _canBeCreatedFrom(value, out errorDescription);
+            return _canCreateFrom(value, out errorDescription);
         }
 
-        private static CanBeCreatedFromDelegate? TryCreateExtendedValidator(MethodInfo[] methods)
+        private static CanCreateFromDelegate? TryCreateExtendedValidator(MethodInfo[] methods)
         {
             var validator =
-                TryCreateValidator<CanBeCreatedFromDelegate>(
+                TryCreateValidator<CanCreateFromDelegate>(
                     methods,
                     new[] { typeof(TValue), typeof(string).MakeByRefType() },
                     new[] { "value", "errorDescription" }
@@ -124,10 +124,10 @@ public class ValueOf<TValue, TThis>
             return validator;
         }
 
-        private static CanBeCreatedFromDelegate? TryCreateShortValidator(MethodInfo[] methods)
+        private static CanCreateFromDelegate? TryCreateShortValidator(MethodInfo[] methods)
         {
-            CanBeCreatedFromShortDelegate? shortValidator =
-                TryCreateValidator<CanBeCreatedFromShortDelegate>(
+            CanCreateFromShortDelegate? shortValidator =
+                TryCreateValidator<CanCreateFromShortDelegate>(
                     methods,
                     new[] { typeof(TValue) },
                     new[] { "value" }
@@ -138,7 +138,7 @@ public class ValueOf<TValue, TThis>
                 return null;
             }
 
-            CanBeCreatedFromDelegate validator = (TValue value, out string? errorDescripton) =>
+            CanCreateFromDelegate validator = (TValue value, out string? errorDescripton) =>
             {
                 errorDescripton = shortValidator(value) ? null : "<NOT SPECIFIED>";
 
