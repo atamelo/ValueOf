@@ -200,7 +200,7 @@ public class ValueOf<TValue, TThis>
                 parameters[i] = Expression.Parameter(signature[i], parameterNames[i]);
             }
 
-            // TODO: call to an existing method => use Delegate.CreateDelegate ?
+            // microbenchmarking showed Extression trees are ~10% better Delegate.CreateDelegate
             MethodCallExpression call = Expression.Call(validationMethod, parameters);
 
             try
@@ -243,7 +243,6 @@ public class ValueOf<TValue, TThis>
                         $"for target type '{typeof(TThis).FullName}' cannot be public.");
                 }
 
-                // TODO: call to an existing method => use Delegate.CreateDelegate ?
                 ParameterExpression constructorParameter = Expression.Parameter(typeof(TValue), "value");
                 NewExpression newExpression = Expression.New(ctor, constructorParameter);
 
