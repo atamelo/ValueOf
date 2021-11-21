@@ -56,15 +56,18 @@ public record EmailAddress : ValueOf<string, EmailAddress>.AsClass
 To construct an instance, use the following API:
 
 ```csharp
-if (!EmailAddress.TryFrom("my@my.com", out var email, out var error))
+string someString = ...;
+
+if (!EmailAddress.TryFrom(someString, out var email, out var error))
 {//validation failed
     Console.WriteLine($"Error occurred. {error}");
 }
-else 
+else
 {
     // validation passed, use the 'email' instance
 }
 ```
+
 `EmailAddress.IsValid(...)` validation method will be discovered and used to validate the passed in value parameter.
 
 You can also hook up your validation framework of choice to the `EmailAddress.IsValid(...)` method. This is a way to keep validation logic inside your domain classes.
