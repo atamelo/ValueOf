@@ -1,14 +1,16 @@
 # ValueOf
-A helper to deal with primitive obsession. Enables creation of types with value object semantics. Inspired by https://github.com/mcintyre321/ValueOf. But this version doesn't use exceptions to communicate validation failures.
 
+A helper to deal with primitive obsession. Enables creation of types with value object semantics. Inspired by https://github.com/mcintyre321/ValueOf. But this version doesn't use exceptions to communicate validation failures.
 
 ## Scenarios
 
 ### Scenario 1 - no validation is needed, **reference type** value object.
 
 Steps:
-- Create a record derived from `ValueOf<TValue, TThis>.AsClass`
+
+- Create a record **class** derived from `ValueOf<TValue, TThis>.AsClass`
 - Create a single-argument **private** contructor
+
 ```csharp
 public record FirstName : ValueOf<string, FirstName>.AsClass
 {
@@ -17,17 +19,22 @@ public record FirstName : ValueOf<string, FirstName>.AsClass
     }
 }
 ```
+
 To construct an instance, use the following API:
+
 ```csharp
 FirstName firstName = FirstName.From("John");
 ```
 
 ### Scenario 2 - validation is needed, **reference type** value object.
+
 Steps:
-- Create a record derived from `ValueOf<TValue, TThis>.AsClass`
+
+- Create a record **class** derived from `ValueOf<TValue, TThis>.AsClass`
 - Create a single-argument **private** contructor
 - Define a bool-returning public **static** method named _IsValid_ with the signature `(int value, out string? error)`
 - Alternatively, you can create an arbitrarily named method with the same signature and mark it with the `[Validator]` attribute
+
 ```csharp
 public record EmailAddress : ValueOf<string, EmailAddress>.AsClass
 {
@@ -45,7 +52,9 @@ public record EmailAddress : ValueOf<string, EmailAddress>.AsClass
     }
 }
 ```
+
 To construct an instance, use the following API:
+
 ```csharp
 if (!EmailAddress.TryFrom("my@my.com", out var email, out var error))
 {
