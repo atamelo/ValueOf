@@ -7,7 +7,7 @@ A helper to deal with primitive obsession. Enables creation of types with value 
 
 ## Scenarios
 
-### Scenario 1 - no validation is needed, **reference type** value object.
+### Scenario 1 - no validation is needed, **reference type** value object
 
 Steps:
 
@@ -29,11 +29,11 @@ To construct an instance, use the following API:
 FirstName firstName = FirstName.From("John");
 ```
 
-### Scenario 2 - validation is needed, **reference type** value object.
+### Scenario 2 - validation is needed, **reference type** value object
 
 Steps:
 
-- Create a record **class** derived from `ValueOf<TValue, TThis>.AsClass` class.
+- Create a **record class** derived from `ValueOf<TValue, TThis>.AsClass` record class.
 - Create a single-argument **private** constructor.
 - Define a bool-returning **public static** method named _IsValid_ with the signature `(TValue value, out string? error)`.
 - Alternatively, you can create an arbitrarily named method with the same signature and mark it with the `[Validator]` attribute.
@@ -59,13 +59,14 @@ To construct an instance, use the following API:
 ```csharp
 string someString = ...;
 
-if (!EmailAddress.TryFrom(someString, out EmailAddress? email))
-{//validation failed
-    Console.WriteLine($"Error occurred.");
+if (EmailAddress.TryFrom(someString, out EmailAddress? email))
+{
+    // validation passed, use the 'email' instance
 }
 else
 {
-    // validation passed, use the 'email' instance
+    //validation failed
+    Console.WriteLine($"Error occurred.");
 }
 ```
 
@@ -73,7 +74,7 @@ else
 
 You can also hook up your validation framework of choice to the `EmailAddress.IsValid(...)` method. This is a way to keep validation logic inside your domain classes.
 
-If validation **error message** is needed, the following API should be used:
+If a validation **error message** is needed, the following API should be used:
 
 ```csharp
 if (!EmailAddress.TryFrom(someString, out EmailAddress? email, out string? error))
@@ -82,7 +83,7 @@ if (!EmailAddress.TryFrom(someString, out EmailAddress? email, out string? error
 }
 ```
 
-In this case, the validation message should also be extended and have the following signature:
+In this case, the validation methos should also be extended and have the following signature:
 
 ```csharp
 public static bool IsValid(string value, out string? error)
@@ -95,7 +96,7 @@ public static bool IsValid(string value, out string? error)
 }
 ```
 
-### Scenario 3 - validation is needed, **value type** value object.
+### Scenario 3 - validation is needed, **value type** value object
 
 - Create a **readonly record struct** implementing `ValueOf<TValue, TThis>.AsStruct` interface.
 - Create a single-argument **private** constructor.
@@ -151,14 +152,7 @@ public readonly record struct UserId : ValueOf<int, UserId>.AsStruct
 
     public static bool IsValid(int value, out string? error)
     {
-        if (value < 0)
-        {
-            error = "UserId cannot be a negative value.";
-            return false;
-        }
-
-        error = null;
-        return false;
+        ...
     }
 }
 ```
