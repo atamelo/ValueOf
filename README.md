@@ -1,8 +1,9 @@
 # ValueOf
 
-A helper to deal with primitive obsession. Enables creation of types with value object semantics. Inspired by https://github.com/mcintyre321/ValueOf. This version has the following enhancements:
- - Doesn't use exceptions to communicate validation failures - cleaner code, easier to integrate with validation frameworks.
- - Supports structs - no pressure on GC .
+A helper to deal with primitive obsession. Enables creation of types with value object semantics. Inspired by https://github.com/mcintyre321/ValueOf. This alternative version has the following enhancements:
+
+- Doesn't use exceptions to communicate validation failures - cleaner code, easier to integrate with validation frameworks.
+- Supports structs - no pressure on GC .
 
 ## Scenarios
 
@@ -44,11 +45,9 @@ public record EmailAddress : ValueOf<string, EmailAddress>.AsClass
     {
     }
 
-    public static bool IsValid(string value, out string? error)
+    public static bool IsValid(string value)
     {
         bool isValid = Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase);
-
-        error = isValid ? null : $"Invalid email: '{value}'.";
 
         return isValid;
     }
@@ -82,7 +81,22 @@ if (!EmailAddress.TryFrom(someString, out EmailAddress? email, out string? error
     Console.WriteLine($"Error occurred. {error}");
 }
 ```
+
+In this case, the validation message should also be extended and have the following signature:
+
+```csharp
+public static bool IsValid(string value, out string? error)
+{
+    bool isValid = Regex.IsMatch(value, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase);
+
+    error = isValid ? null : $"Invalid email: '{value}'.";
+
+    return isValid;
+}
+```
+
 ### Scenario 3 - validation is needed, **value type** value object.
+
 - Create a **readonly record struct** implementing `ValueOf<TValue, TThis>.AsStruct` interface.
 - Create a single-argument **private** constructor.
 - Implement the interface - create **public readonly** property named _Value_ of type `TValue`. Unfortunately, this boilerplate can't be implemented in the interface as it requires storing instance-specific state.
@@ -112,7 +126,7 @@ public readonly record struct UserId : ValueOf<int, UserId>.AsStruct
 }
 ```
 
-Due to how the ```TryFrom/From``` methods are 'mixed in' to the struct (by means of default interface implementation), they end up unavailable to be called directly from the implementing type. Hence the API for instance creation is not as pretty as for reference-based `ValueOf` types:
+Due to how the `TryFrom/From` methods are 'mixed in' to the struct (by means of default interface implementation), they end up unavailable to be called directly from the implementing type. Hence the API for instance creation is not as pretty as for reference-based `ValueOf` types:
 
 ```csharp
 ValueOf<int, UserId>.TryFrom(10, out UserId userId);
