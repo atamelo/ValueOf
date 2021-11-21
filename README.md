@@ -35,7 +35,7 @@ Steps:
 
 - Create a **record class** derived from `ValueOf<TValue, TThis>.AsClass` record class.
 - Create a single-argument **private** constructor.
-- Define a bool-returning **public static** method named _IsValid_ with the signature `(TValue value, out string? error)`.
+- Define a bool-returning **public static** method named _IsValid_ with the signature `(TValue value)` or alternatively `(TValue value, out string? error)` - see below for usage details.
 - Alternatively, you can create an arbitrarily named method with the same signature and mark it with the `[Validator]` attribute.
 
 ```csharp
@@ -101,7 +101,7 @@ public static bool IsValid(string value, out string? error)
 - Create a **readonly record struct** implementing `ValueOf<TValue, TThis>.AsStruct` interface.
 - Create a single-argument **private** constructor.
 - Implement the interface - create **public readonly** property named _Value_ of type `TValue`. Unfortunately, this boilerplate can't be implemented in the interface as it requires storing instance-specific state.
-- Define a bool-returning **public static** method named _IsValid_ with the signature `(TValue value, out string? error)`.
+- Define a bool-returning **public static** method named _IsValid_ with the signature `(TValue value)` or `(TValue value, out string? error)`.
 - Alternatively, you can create an arbitrarily named method with the same signature and mark it with the `[Validator]` attribute.
 
 ```csharp
