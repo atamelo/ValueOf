@@ -32,7 +32,7 @@ Steps:
 
 - Create a record **class** derived from `ValueOf<TValue, TThis>.AsClass`
 - Create a single-argument **private** contructor
-- Define a bool-returning public **static** method named _IsValid_ with the signature `(int value, out string? error)`
+- Define a bool-returning **public static** method named _IsValid_ with the signature `(TValue value, out string? error)`
 - Alternatively, you can create an arbitrarily named method with the same signature and mark it with the `[Validator]` attribute
 
 ```csharp
