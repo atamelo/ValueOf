@@ -68,6 +68,6 @@ else
 }
 ```
 
-`EmailAddress.IsValid(...)` validation method will be discovered and used to validate the passed in value parameter.
+`EmailAddress.IsValid(...)` validation method will be discovered and used by the `TryFrom(...)` method to validate the passed in value parameter.
 
 You can also hook up your validation framework of choice to the `EmailAddress.IsValid(...)` method. This is a way to keep validation logic inside your domain classes.
