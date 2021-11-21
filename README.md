@@ -58,7 +58,7 @@ To construct an instance, use the following API:
 ```csharp
 string someString = ...;
 
-if (!EmailAddress.TryFrom(someString, out var email, out var error))
+if (!EmailAddress.TryFrom(someString, out EmailAddress? email, out string? error))
 {//validation failed
     Console.WriteLine($"Error occurred. {error}");
 }
