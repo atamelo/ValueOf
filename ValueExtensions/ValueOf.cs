@@ -8,29 +8,29 @@ namespace ValueExtensions;
 
 public class ValueOf<TValue, TThis>
         where TValue : notnull
-        where TThis : notnull, ValueOf<TValue, TThis>.AsVal
+        where TThis : notnull, ValueOf<TValue, TThis>.AsStruct
 {
-    public static bool TryCreateFrom(
+    public static bool TryFrom(
     TValue value,
     [NotNullWhen(true)] out TThis? newInstance)
     {
-        return AsVal.TryCreateFrom(value, out newInstance, out _);
+        return AsStruct.TryFrom(value, out newInstance, out _);
     }
 
-    public static bool TryCreateFrom(
+    public static bool TryFrom(
         TValue value,
         [NotNullWhen(true)] out TThis? newInstance,
         [NotNullWhen(false)] out string? errorDescription)
     {
-        return AsVal.TryCreateFrom(value, out newInstance, out errorDescription);
+        return AsStruct.TryFrom(value, out newInstance, out errorDescription);
     }
 
-    public static TThis CreateFrom(TValue value)
+    public static TThis From(TValue value)
     {
-        return AsVal.CreateFrom(value);
+        return AsStruct.From(value);
     }
 
-    public interface AsVal
+    public interface AsStruct
     {
         private delegate bool CanCreateFromDelegate(TValue value, out string? error);
         private delegate bool CanCreateFromShortDelegate(TValue value);
@@ -41,14 +41,14 @@ public class ValueOf<TValue, TThis>
 
         public TValue Value { get; }
 
-        public static bool TryCreateFrom(
+        public static bool TryFrom(
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance)
         {
-            return TryCreateFrom(value, out newInstance, out _);
+            return TryFrom(value, out newInstance, out _);
         }
 
-        public static bool TryCreateFrom(
+        public static bool TryFrom(
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
@@ -64,11 +64,11 @@ public class ValueOf<TValue, TThis>
             return true;
         }
 
-        public static TThis CreateFrom(TValue value)
+        public static TThis From(TValue value)
         {
             static string EscapeIfNull<T>(T value) => $"{(value is not null ? $"[{value}]" : "<NULL>")}";
 
-            if (!TryCreateFrom(value, out TThis? newInstance, out string? errorDescription))
+            if (!TryFrom(value, out TThis? newInstance, out string? errorDescription))
             {
                 throw new ArgumentException($"Can't create an instance of {typeof(TThis).FullName} type " +
                     $"from value {EscapeIfNull(value)} - validation failed with error: {EscapeIfNull(errorDescription)}");
@@ -158,7 +158,7 @@ public class ValueOf<TValue, TThis>
             MethodInfo? validationMethod =
                 methods
                     .Where(method =>
-                        method.Name == "CanCreateFrom" &&
+                        method.Name == "IsValid" &&
                         ParametersMatch(method, signature))
                     .SingleOrDefault();
 
@@ -268,33 +268,33 @@ public class ValueOf<TValue, TThis>
         }
     }
 
-    public record AsRef : AsVal
+    public record AsClass : AsStruct
     {
         public TValue Value { get; }
 
-        protected AsRef(TValue value)
+        protected AsClass(TValue value)
         {
             Value = value;
         }
 
-        public static bool TryCreateFrom(
+        public static bool TryFrom(
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance)
         {
-            return AsVal.TryCreateFrom(value, out newInstance);
+            return AsStruct.TryFrom(value, out newInstance);
         }
 
-        public static bool TryCreateFrom(
+        public static bool TryFrom(
             TValue value,
             [NotNullWhen(true)] out TThis? newInstance,
             [NotNullWhen(false)] out string? errorDescription)
         {
-            return AsVal.TryCreateFrom(value, out newInstance, out errorDescription);
+            return AsStruct.TryFrom(value, out newInstance, out errorDescription);
         }
 
-        public static TThis CreateFrom(TValue value)
+        public static TThis From(TValue value)
         {
-            return AsVal.CreateFrom(value);
+            return AsStruct.From(value);
         }
     }
 }
