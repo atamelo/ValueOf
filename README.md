@@ -157,7 +157,7 @@ public readonly record struct UserId : ValueOf<int, UserId>.AsStruct
 }
 ```
 
-Now the object creation syntax is much cleaner and fully matches the synteax for referece-based value objects:
+Now the object creation syntax is much cleaner and fully matches the syntax for referece-based value objects:
 
 ```csharp
 UserId.TryFrom(10, out UserId userId);
@@ -165,4 +165,4 @@ UserId.TryFrom(10, out UserId userId);
 
 The obvious downside of this approach is that it requires users to implement extra boilerplate.
 
-A totaly different alternative approach would be to use .NET 6 source code generators. When/If the new API proves to be the one to go forward with ;)
+A totaly different alternative would be to use .NET 6 source code generators. When/If the new API proves to be the one to go forward with ;)
