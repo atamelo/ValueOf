@@ -83,7 +83,7 @@ if (!EmailAddress.TryFrom(someString, out EmailAddress? email, out string? error
 }
 ```
 
-In this case, the validation methos should also be extended and have the following signature:
+In this case, the validation method should also be extended and have the following signature:
 
 ```csharp
 public static bool IsValid(string value, out string? error)
@@ -127,7 +127,7 @@ public readonly record struct UserId : ValueOf<int, UserId>.AsStruct
 }
 ```
 
-Due to how the `TryFrom/From` methods are 'mixed in' to the struct (by means of default interface implementation), they end up unavailable to be called directly from the implementing type. Hence the API for instance creation is not as pretty as for reference-based `ValueOf` types:
+Due to how the `TryFrom/From` methods are 'mixed in' to the struct (by means of default interface implementation), they end up unavailable to be called directly, i.e. as static methods of the implementing type. Hence the API for instance creation is not as pretty as for reference-based `ValueOf` types:
 
 ```csharp
 ValueOf<int, UserId>.TryFrom(10, out UserId userId);
